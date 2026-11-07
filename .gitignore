@@ -1,12 +1,4 @@
 # Student-produced artifacts — live in fork, not upstream
-app_python/
-app_go/
-k8s/
-ansible/
-terraform/
-monitoring/
-submissions/
-.github/workflows/
 
 # Instructor-only reference submissions (dry-run outputs)
 refs/
