@@ -1,9 +1,11 @@
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 import platform
 import socket
 import os
 from datetime import datetime, timezone
-
+import logging
 
 
 SERVICE_NAME = "my-devops-service"
@@ -11,8 +13,13 @@ SERVICE_VERSION = "1.0.0"
 START_TIME = datetime.now(timezone.utc)
 
 
-
+host = os.getenv("HOST", "0.0.0.0")
+port = int(os.getenv("PORT", "5000"))
+debug = os.getenv("DEBUG", "False").lower()
+debug = (debug == "true")
 app = FastAPI()
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def get_system_info():
     return {
@@ -25,10 +32,13 @@ def get_system_info():
     }
 
 def get_uptime():
-    uptime = datetime.now(timezone.utc) - START_TIME
+    return datetime.now(timezone.utc) - START_TIME
+
+def get_runtime():
+    uptime = get_uptime()
     return {
-        "uptime_seconds": int((uptime).total_seconds()),
-        "uptime_human": f"{int((uptime).total_seconds()) // 3600} hour, {int((uptime).total_seconds()) % 3600 // 60} minutes",
+        "uptime_seconds": int(uptime.total_seconds()),
+        "uptime_human": f"{int(uptime.total_seconds()) // 3600} hour, {int(uptime.total_seconds()) % 3600 // 60} minutes",
         "current_time": datetime.now(timezone.utc).isoformat(),
         "timezone": "UTC"
     }
@@ -48,11 +58,33 @@ def get_endpoints():
             
         ]
 
+# Error 404
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(
+        status_code=404, 
+        content={"error": exc.detail, "status": "error", "path": request.url.path}
+        )
 
+# Error 500
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logging.error(f"Internal  error: {exc}")
+    return JSONResponse(
+        status_code=500, 
+        content={"error": "Internal Server Error", "status": "error"}
+        )
+
+# Check heath
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "uptime_seconds": int(get_uptime().total_seconds())
+        }
 
+# Get info about service
 @app.get("/")
 def get_root(request: Request):
     data = {
@@ -63,7 +95,7 @@ def get_root(request: Request):
             "framework": "FastAPI"
         }, 
         "system": get_system_info(),
-        "runtime": get_uptime(),
+        "runtime": get_runtime(),
         "request": {
             "client_ip": request.client.host,
             "user_agent": request.headers.get("user-agent"),
@@ -77,4 +109,5 @@ def get_root(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    logging.info("Application started")
+    uvicorn.run(app, host=host, port=port, reload=debug)
