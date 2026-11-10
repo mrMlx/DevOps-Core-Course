@@ -34,6 +34,38 @@ Among the three options — Flask, FastAPI, and Django — the choice is obvious
 | GET | '/' | Returns full service and system info|
 | GET | '/health' | Health check endpoint |
 
+
+#### Example for `/`
+**Request:**
+```http
+GET / HTTP/1.1
+Host: localhost:5000
+```
+**Response (JSON):**
+```json
+{
+  "service": {
+    "name": "my-devops-service",
+    "version": "1.0.0"
+  }
+}
+```
+
+#### Example for `/health`
+**Request:**
+```http
+GET /health HTTP/1.1
+Host: localhost:5000
+```
+**Response (JSON):**
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-11-08T12:06:58.569643+00:00",
+  "uptime_seconds": 321
+}
+```
+
 ## Testing Evidence
 
 ### 1)
@@ -76,4 +108,14 @@ INFO:     Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
 > ENG:
 One of the biggest challenges was adapting the Linux-based commands for Windows PowerShell, which I resolved through web research. Additionally, I faced a logic issue with calculating the human-readable uptime. I solved this by calculating the timedelta between the current time and the start time, and then applying arithmetic operations (modulo and integer division) to correctly extract hours and minutes from total seconds.
 
-## GitHub Community
+
+## Proof of Work
+```text
+app_python/
+├── .gitignore
+├── README.md
+├── app.py
+├── requirements.txt
+└── docs/
+    └── LAB01.md
+```
